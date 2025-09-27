@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import {
   View,
   TextInput,
-  Button,
   StyleSheet,
-  SafeAreaView,
+  TouchableOpacity,
   Text,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTheme } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TASKS_STORAGE_KEY } from './index';
 
@@ -21,6 +22,7 @@ const EditModal: React.FC = () => {
   const { id, title } = useLocalSearchParams<{ id: string; title: string }>();
   const [taskTitle, setTaskTitle] = useState(title || '');
   const router = useRouter();
+  const theme = useTheme();
 
   const handleSaveChanges = async () => {
     if (!id || !taskTitle.trim()) {
@@ -43,16 +45,24 @@ const EditModal: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.wrapper}>
+    <SafeAreaView style={[styles.wrapper, { backgroundColor: theme.colors.background }]}>
       <View style={styles.container}>
-        <Text style={styles.header}>Edit Task</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            { color: theme.colors.text, borderColor: theme.colors.border, backgroundColor: theme.colors.card },
+          ]}
           value={taskTitle}
           onChangeText={setTaskTitle}
           autoFocus
+          multiline
         />
-        <Button title="Save Changes" onPress={handleSaveChanges} color="#4A4A4A" />
+        <TouchableOpacity
+          style={[styles.saveButton, { backgroundColor: theme.colors.primary }]}
+          onPress={handleSaveChanges}
+        >
+          <Text style={styles.saveButtonText}>Save Changes</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -61,31 +71,29 @@ const EditModal: React.FC = () => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#F8F8F0', // Off-white paper color
   },
   container: {
     flex: 1,
     padding: 16,
   },
-  header: {
-    fontFamily: 'IndieFlower-Regular',
-    fontSize: 32,
-    color: '#4A4A4A',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
   input: {
     flex: 1,
-    borderBottomWidth: 1,
-    borderColor: '#D1D5DB',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 24,
-    fontFamily: 'IndieFlower-Regular',
-    fontSize: 24,
-    color: '#4A4A4A',
-    backgroundColor: 'transparent',
+    fontSize: 20,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
     textAlignVertical: 'top',
+    marginBottom: 24,
+  },
+  saveButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 

@@ -3,15 +3,23 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TextInput,
-  Button,
   FlatList,
-  Switch,
   TouchableOpacity,
+  LayoutAnimation,
+  UIManager,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Link, useFocusEffect } from 'expo-router';
+import { useTheme } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface Task {
   id: string;
@@ -24,6 +32,7 @@ export const TASKS_STORAGE_KEY = 'TASKS';
 const HomeScreen: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const theme = useTheme();
 
   const loadTasks = useCallback(async () => {
     try {
@@ -61,12 +70,14 @@ const HomeScreen: React.FC = () => {
         title: newTaskTitle.trim(),
         completed: false,
       };
-      setTasks(prevTasks => [...prevTasks, newTask]);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setTasks(prevTasks => [newTask, ...prevTasks]);
       setNewTaskTitle('');
     }
   };
 
   const handleToggleCompletion = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === id ? { ...task, completed: !task.completed } : task
@@ -75,48 +86,69 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleDeleteTask = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
   };
 
   const renderItem = ({ item }: { item: Task }) => (
-    <View style={styles.taskCard}>
-      <Switch
-        value={item.completed}
-        onValueChange={() => handleToggleCompletion(item.id)}
-        thumbColor={item.completed ? '#A9A9A9' : '#4A4A4A'}
-        trackColor={{ false: '#E0E0E0', true: '#C8C8C8' }}
-      />
-      <Link href={{ pathname: '/modal', params: { id: item.id, title: item.title } }} asChild>
-        <TouchableOpacity style={styles.taskTitleContainer}>
-          <Text style={[styles.taskTitle, item.completed && styles.completedTask]}>
-            {item.title}
-          </Text>
+    <Animated.View entering={FadeIn} exiting={FadeOut}>
+      <View style={[styles.taskCard, { backgroundColor: theme.colors.card }]}>
+        <TouchableOpacity
+          onPress={() => handleToggleCompletion(item.id)}
+          style={styles.checkbox}
+        >
+          {item.completed && (
+            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+          )}
         </TouchableOpacity>
-      </Link>
-      <TouchableOpacity onPress={() => handleDeleteTask(item.id)}>
-        <Text style={styles.deleteButton}>Delete</Text>
-      </TouchableOpacity>
-    </View>
+        <Link href={{ pathname: '/modal', params: { id: item.id, title: item.title } }} asChild>
+          <TouchableOpacity style={styles.taskTitleContainer}>
+            <Text
+              style={[
+                styles.taskTitle,
+                { color: theme.colors.text },
+                item.completed && styles.completedTask,
+              ]}
+            >
+              {item.title}
+            </Text>
+          </TouchableOpacity>
+        </Link>
+        <TouchableOpacity onPress={() => handleDeleteTask(item.id)}>
+          <Ionicons name="trash-outline" size={22} color="#EF4444" />
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
   );
 
   return (
-    <SafeAreaView style={styles.wrapper}>
+    <SafeAreaView style={[styles.wrapper, { backgroundColor: theme.colors.background }]} edges={['bottom', 'left', 'right']}>
       <View style={styles.container}>
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { backgroundColor: theme.colors.card }]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: theme.colors.text }]}
             placeholder="Add a new task..."
-            placeholderTextColor="#A9A9A9"
+            placeholderTextColor="#9CA3AF"
             value={newTaskTitle}
             onChangeText={setNewTaskTitle}
+            onSubmitEditing={handleAddTask}
           />
-          <Button title="Add" onPress={handleAddTask} color="#4A4A4A" />
+          <TouchableOpacity onPress={handleAddTask} style={styles.addButton}>
+            <Ionicons name="add" size={28} color={theme.colors.primary} />
+          </TouchableOpacity>
         </View>
         <FlatList
           data={tasks}
           renderItem={renderItem}
           keyExtractor={item => item.id}
-          ListEmptyComponent={<Text style={styles.placeholder}>Your to-do list is empty.</Text>}
+          contentContainerStyle={{ paddingTop: 16 }}
+          ListEmptyComponent={
+            <View style={styles.placeholderContainer}>
+              <Text style={[styles.placeholder, { color: '#9CA3AF' }]}>
+                Your to-do list is empty.
+              </Text>
+            </View>
+          }
         />
       </View>
     </SafeAreaView>
@@ -129,55 +161,65 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 16,
   },
   inputContainer: {
     flexDirection: 'row',
-    marginBottom: 16,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#D1D1D6',
   },
   input: {
     flex: 1,
-    borderBottomWidth: 1,
-    borderColor: '#D1D5DB',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
-    fontFamily: 'IndieFlower-Regular',
     fontSize: 18,
-    color: '#4A4A4A',
-    backgroundColor: 'transparent',
+    paddingVertical: 8,
+  },
+  addButton: {
+    marginLeft: 12,
   },
   taskCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderColor: '#E0E0E0',
+    marginHorizontal: 16,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   taskTitleContainer: {
     flex: 1,
-    marginHorizontal: 12,
   },
   taskTitle: {
-    fontFamily: 'IndieFlower-Regular',
-    fontSize: 20,
-    color: '#4A4A4A',
+    fontSize: 17,
+    fontWeight: '500',
   },
   completedTask: {
     textDecorationLine: 'line-through',
-    color: '#A9A9A9',
+    color: '#9CA3AF',
   },
-  deleteButton: {
-    fontFamily: 'IndieFlower-Regular',
-    fontSize: 16,
-    color: '#EF4444',
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 100,
   },
   placeholder: {
-    fontFamily: 'IndieFlower-Regular',
-    fontSize: 18,
-    color: '#A9A9A9',
-    textAlign: 'center',
-    marginTop: 32,
+    fontSize: 16,
   },
 });
 
