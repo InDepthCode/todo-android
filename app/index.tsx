@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Link, useFocusEffect } from 'expo-router';
 
 interface Task {
   id: string;
@@ -18,26 +19,28 @@ interface Task {
   completed: boolean;
 }
 
-const TASKS_STORAGE_KEY = 'TASKS';
+export const TASKS_STORAGE_KEY = 'TASKS';
 
 const HomeScreen: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
-  useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        const storedTasks = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
-        if (storedTasks !== null) {
-          setTasks(JSON.parse(storedTasks));
-        }
-      } catch (error) {
-        console.error('Failed to load tasks from storage', error);
+  const loadTasks = useCallback(async () => {
+    try {
+      const storedTasks = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
+      if (storedTasks !== null) {
+        setTasks(JSON.parse(storedTasks));
       }
-    };
-
-    loadTasks();
+    } catch (error) {
+      console.error('Failed to load tasks from storage', error);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTasks();
+    }, [loadTasks])
+  );
 
   useEffect(() => {
     const saveTasks = async () => {
@@ -77,15 +80,17 @@ const HomeScreen: React.FC = () => {
 
   const renderItem = ({ item }: { item: Task }) => (
     <View style={styles.taskCard}>
-      <View style={styles.taskContent}>
-        <Switch
-          value={item.completed}
-          onValueChange={() => handleToggleCompletion(item.id)}
-        />
-        <Text style={[styles.taskTitle, item.completed && styles.completedTask]}>
-          {item.title}
-        </Text>
-      </View>
+      <Switch
+        value={item.completed}
+        onValueChange={() => handleToggleCompletion(item.id)}
+      />
+      <Link href={{ pathname: '/modal', params: { id: item.id, title: item.title } }} asChild>
+        <TouchableOpacity style={styles.taskTitleContainer}>
+          <Text style={[styles.taskTitle, item.completed && styles.completedTask]}>
+            {item.title}
+          </Text>
+        </TouchableOpacity>
+      </Link>
       <TouchableOpacity onPress={() => handleDeleteTask(item.id)}>
         <Text style={styles.deleteButton}>Delete</Text>
       </TouchableOpacity>
@@ -140,7 +145,6 @@ const styles = StyleSheet.create({
   },
   taskCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: 'white',
     padding: 16,
@@ -152,14 +156,12 @@ const styles = StyleSheet.create({
     shadowRadius: 1.41,
     elevation: 2, // Shadow for Android
   },
-  taskContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  taskTitleContainer: {
     flex: 1,
+    marginHorizontal: 12,
   },
   taskTitle: {
     fontSize: 16,
-    marginLeft: 12,
   },
   completedTask: {
     textDecorationLine: 'line-through',
@@ -167,7 +169,6 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     color: '#EF4444', // tailwind red-500
-    marginLeft: 16,
   },
   placeholder: {
     fontSize: 16,

@@ -12,6 +12,7 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="index" options={{ title: 'My To-Do List' }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Edit Task' }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
