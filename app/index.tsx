@@ -83,6 +83,8 @@ const HomeScreen: React.FC = () => {
       <Switch
         value={item.completed}
         onValueChange={() => handleToggleCompletion(item.id)}
+        thumbColor={item.completed ? '#A9A9A9' : '#4A4A4A'}
+        trackColor={{ false: '#E0E0E0', true: '#C8C8C8' }}
       />
       <Link href={{ pathname: '/modal', params: { id: item.id, title: item.title } }} asChild>
         <TouchableOpacity style={styles.taskTitleContainer}>
@@ -104,10 +106,11 @@ const HomeScreen: React.FC = () => {
           <TextInput
             style={styles.input}
             placeholder="Add a new task..."
+            placeholderTextColor="#A9A9A9"
             value={newTaskTitle}
             onChangeText={setNewTaskTitle}
           />
-          <Button title="Add" onPress={handleAddTask} />
+          <Button title="Add" onPress={handleAddTask} color="#4A4A4A" />
         </View>
         <FlatList
           data={tasks}
@@ -123,7 +126,6 @@ const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#F9FAFB', // tailwind gray-50
   },
   container: {
     flex: 1,
@@ -135,44 +137,45 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#D1D5DB', // tailwind gray-300
+    borderBottomWidth: 1,
+    borderColor: '#D1D5DB',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 8,
     marginRight: 8,
-    backgroundColor: 'white',
+    fontFamily: 'IndieFlower-Regular',
+    fontSize: 18,
+    color: '#4A4A4A',
+    backgroundColor: 'transparent',
   },
   taskCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 8, // Soft corners
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.20,
-    shadowRadius: 1.41,
-    elevation: 2, // Shadow for Android
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: '#E0E0E0',
   },
   taskTitleContainer: {
     flex: 1,
     marginHorizontal: 12,
   },
   taskTitle: {
-    fontSize: 16,
+    fontFamily: 'IndieFlower-Regular',
+    fontSize: 20,
+    color: '#4A4A4A',
   },
   completedTask: {
     textDecorationLine: 'line-through',
-    color: '#9CA3AF', // tailwind gray-400
+    color: '#A9A9A9',
   },
   deleteButton: {
-    color: '#EF4444', // tailwind red-500
+    fontFamily: 'IndieFlower-Regular',
+    fontSize: 16,
+    color: '#EF4444',
   },
   placeholder: {
-    fontSize: 16,
-    color: '#6B7280', // tailwind gray-500
+    fontFamily: 'IndieFlower-Regular',
+    fontSize: 18,
+    color: '#A9A9A9',
     textAlign: 'center',
     marginTop: 32,
   },

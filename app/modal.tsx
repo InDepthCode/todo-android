@@ -52,7 +52,7 @@ const EditModal: React.FC = () => {
           onChangeText={setTaskTitle}
           autoFocus
         />
-        <Button title="Save Changes" onPress={handleSaveChanges} />
+        <Button title="Save Changes" onPress={handleSaveChanges} color="#4A4A4A" />
       </View>
     </SafeAreaView>
   );
@@ -61,26 +61,31 @@ const EditModal: React.FC = () => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8F8F0', // Off-white paper color
   },
   container: {
     flex: 1,
     padding: 16,
   },
   header: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'IndieFlower-Regular',
+    fontSize: 32,
+    color: '#4A4A4A',
     marginBottom: 24,
+    textAlign: 'center',
   },
   input: {
-    borderWidth: 1,
+    flex: 1,
+    borderBottomWidth: 1,
     borderColor: '#D1D5DB',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 8,
     marginBottom: 24,
-    backgroundColor: 'white',
-    fontSize: 16,
+    fontFamily: 'IndieFlower-Regular',
+    fontSize: 24,
+    color: '#4A4A4A',
+    backgroundColor: 'transparent',
+    textAlignVertical: 'top',
   },
 });
 
