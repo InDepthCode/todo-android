@@ -9,7 +9,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { StackHeaderProps } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
-// Custom Header Component for the main screen
+// Custom Header Component
 const CustomHeader = (props: StackHeaderProps) => {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
@@ -19,26 +19,11 @@ const CustomHeader = (props: StackHeaderProps) => {
   return (
     <View style={{ backgroundColor: theme.colors.card, paddingTop: insets.top }}>
       <View style={[styles.headerContainer, { borderBottomColor: theme.colors.border }]}>
+        <View style={styles.headerSide} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{title}</Text>
-      </View>
-    </View>
-  );
-};
-
-// Custom Header for the Modal screen with a close button
-const CustomModalHeader = (props: StackHeaderProps) => {
-  const insets = useSafeAreaInsets();
-  const theme = useTheme();
-  const router = useRouter();
-  const { options } = props;
-
-  return (
-    <View style={{ backgroundColor: theme.colors.card, paddingTop: insets.top }}>
-      <View style={[styles.headerContainer, { justifyContent: 'center' }]}>
-        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{options.title}</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="close" size={28} color={theme.colors.text} />
-        </TouchableOpacity>
+        <View style={styles.headerSide}>
+          {options.headerRight && options.headerRight({ tintColor: theme.colors.primary })}
+        </View>
       </View>
     </View>
   );
@@ -63,11 +48,11 @@ const RootLayout: React.FC = () => {
     ...DarkTheme,
     colors: {
       ...DarkTheme.colors,
-      primary: '#0A84FF',
-      background: '#000000',
-      card: '#1C1C1E',
-      text: '#FFFFFF',
-      border: '#38383A',
+      primary: '#00E0FF', // Electric Cyan
+      background: '#16161D', // Deep Charcoal
+      card: '#1E1E28', // Lighter Charcoal for cards
+      text: '#E1E1E6', // Soft white/light gray
+      border: '#2D2D3A', // Subtle border
     },
   };
 
@@ -80,16 +65,8 @@ const RootLayout: React.FC = () => {
           <Stack.Screen
             name="index"
             options={{
-              title: 'My To-Do List',
+              title: 'Today\'s Priorities',
               header: (props) => <CustomHeader {...props} />,
-            }}
-          />
-          <Stack.Screen
-            name="modal"
-            options={{
-              presentation: 'modal',
-              title: 'Edit Task',
-              header: (props) => <CustomModalHeader {...props} />,
             }}
           />
         </Stack>
@@ -103,17 +80,18 @@ const styles = StyleSheet.create({
   headerContainer: {
     height: 50,
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
+    borderBottomWidth: 1,
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
   },
-  closeButton: {
-    position: 'absolute',
-    right: 16,
+  headerSide: {
+    width: 60,
+    alignItems: 'flex-end',
   },
 });
 
