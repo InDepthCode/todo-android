@@ -13,15 +13,22 @@ import { Ionicons } from '@expo/vector-icons';
 const CustomHeader = (props: StackHeaderProps) => {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
-  const { options, route } = props;
+  const { options, route, navigation } = props;
   const title = options.title !== undefined ? options.title : route.name;
+  const canGoBack = navigation.canGoBack();
 
   return (
     <View style={{ backgroundColor: theme.colors.card, paddingTop: insets.top }}>
       <View style={[styles.headerContainer, { borderBottomColor: theme.colors.border }]}>
-        <View style={styles.headerSide} />
-        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{title}</Text>
         <View style={styles.headerSide}>
+          {canGoBack && (
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
+          )}
+        </View>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{title}</Text>
+        <View style={[styles.headerSide, styles.headerRight]}>
           {options.headerRight && options.headerRight({ tintColor: theme.colors.primary })}
         </View>
       </View>
@@ -69,6 +76,14 @@ const RootLayout: React.FC = () => {
               header: (props) => <CustomHeader {...props} />,
             }}
           />
+          <Stack.Screen
+            name="modal"
+            options={{
+              presentation: 'modal',
+              title: 'Edit Priority',
+              header: (props) => <CustomHeader {...props} />,
+            }}
+          />
         </Stack>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       </ThemeProvider>
@@ -91,7 +106,13 @@ const styles = StyleSheet.create({
   },
   headerSide: {
     width: 60,
+    justifyContent: 'center',
+  },
+  headerRight: {
     alignItems: 'flex-end',
+  },
+  backButton: {
+    marginLeft: -8, // Align icon better
   },
 });
 

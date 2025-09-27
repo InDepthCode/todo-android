@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useNavigation } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { useTheme } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -32,7 +32,7 @@ interface HistoricalData { [date: string]: string[]; }
 interface WeeklyReportData { weekOf: string; completionRate: number; busiestDay: string; }
 
 // --- Storage Keys ---
-const DAILY_TASKS_KEY = 'DAILY_TASKS';
+export const DAILY_TASKS_KEY = 'DAILY_TASKS';
 const LAST_OPENED_KEY = 'LAST_OPENED_DATE';
 const STREAK_STORAGE_KEY = 'STREAK_DATA';
 const ACTIVITY_STORAGE_KEY = 'ACTIVITY_DATA';
@@ -45,7 +45,7 @@ const getTodayDateString = () => new Date().toISOString().split('T')[0];
 const HomeScreen: React.FC = () => {
   // --- State ---
   const [dailyTasks, setDailyTasks] = useState<(Task | null)[]>([null, null, null]);
-  const [editingSlot, setEditingSlot] = useState<number | null>(null);
+  const [addingToSlot, setAddingToSlot] = useState<number | null>(null);
   const [taskTitle, setTaskTitle] = useState('');
   const [streak, setStreak] = useState<Streak>({ count: 0, lastCompletedDate: null });
   const [activityData, setActivityData] = useState<ActivityData>({});
@@ -56,6 +56,7 @@ const HomeScreen: React.FC = () => {
   // --- Hooks ---
   const theme = useTheme();
   const navigation = useNavigation();
+  const router = useRouter();
 
   // --- Data Loading & Daily Reset ---
   useFocusEffect(
@@ -108,16 +109,18 @@ const HomeScreen: React.FC = () => {
 
   // --- Handlers ---
   const handleAddTask = () => {
-    if (taskTitle.trim() && editingSlot !== null) {
-      const newTask: Task = { id: `${editingSlot}-${Date.now()}`, title: taskTitle.trim(), completed: false };
+    if (taskTitle.trim() && addingToSlot !== null) {
+      const newTask: Task = { id: `${addingToSlot}-${Date.now()}`, title: taskTitle.trim(), completed: false };
       const updatedTasks = [...dailyTasks];
-      updatedTasks[editingSlot] = newTask;
+      updatedTasks[addingToSlot] = newTask;
       
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      if (!selectedDay && !weeklyReport) {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      }
       setDailyTasks(updatedTasks);
       saveData(DAILY_TASKS_KEY, updatedTasks);
       setTaskTitle('');
-      setEditingSlot(null);
+      setAddingToSlot(null);
       Keyboard.dismiss();
     }
   };
@@ -130,32 +133,29 @@ const HomeScreen: React.FC = () => {
     const updatedTasks = [...dailyTasks];
     updatedTasks[index] = { ...task, completed: isCompleting };
 
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (!selectedDay && !weeklyReport) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     setDailyTasks(updatedTasks);
     saveData(DAILY_TASKS_KEY, updatedTasks);
 
-    if (isCompleting) {
-      const todayStr = getTodayDateString();
-      
-      const newActivityData = { ...activityData, [todayStr]: (activityData[todayStr] || 0) + 1 };
-      setActivityData(newActivityData);
-      saveData(ACTIVITY_STORAGE_KEY, newActivityData);
+    const todayStr = getTodayDateString();
+    const completedToday = updatedTasks.filter(t => t?.completed).map(t => t!.title);
+    const newHistoricalData = { ...historicalData, [todayStr]: completedToday };
+    setHistoricalData(newHistoricalData);
+    saveData(HISTORICAL_DATA_KEY, newHistoricalData);
 
-      const newHistoricalData = { ...historicalData };
-      const dayHistory = newHistoricalData[todayStr] || [];
-      dayHistory.push(task.title);
-      newHistoricalData[todayStr] = dayHistory;
-      setHistoricalData(newHistoricalData);
-      saveData(HISTORICAL_DATA_KEY, newHistoricalData);
+    const newActivityData = { ...activityData, [todayStr]: completedToday.length };
+    setActivityData(newActivityData);
+    saveData(ACTIVITY_STORAGE_KEY, newActivityData);
 
-      if (streak.lastCompletedDate !== todayStr) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-        const newStreak = { count: streak.lastCompletedDate === yesterdayStr ? streak.count + 1 : 1, lastCompletedDate: todayStr };
-        setStreak(newStreak);
-        saveData(STREAK_STORAGE_KEY, newStreak);
-      }
+    if (isCompleting && streak.lastCompletedDate !== todayStr) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const newStreak = { count: streak.lastCompletedDate === yesterdayStr ? streak.count + 1 : 1, lastCompletedDate: todayStr };
+      setStreak(newStreak);
+      saveData(STREAK_STORAGE_KEY, newStreak);
     }
   };
 
@@ -164,7 +164,7 @@ const HomeScreen: React.FC = () => {
       handleToggleCompletion(index);
     } else {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setEditingSlot(index);
+      setAddingToSlot(index);
     }
   };
 
@@ -196,7 +196,7 @@ const HomeScreen: React.FC = () => {
     }
 
     const completionRate = Math.round((totalCompleted / (7 * 3)) * 100);
-    const busiestDayName = new Date(busiestDay.date).toLocaleDateString(undefined, { weekday: 'long' });
+    const busiestDayName = busiestDay.date ? new Date(busiestDay.date).toLocaleDateString(undefined, { weekday: 'long' }) : 'N/A';
 
     setWeeklyReport({
       weekOf: startDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
@@ -232,6 +232,14 @@ const HomeScreen: React.FC = () => {
                           {isCompleted && <Ionicons name="checkmark" size={20} color={theme.colors.card} />}
                         </View>
                         <Text style={[styles.taskTitle, { color: theme.colors.text }, isCompleted && styles.completedTask]}>{task.title}</Text>
+                        <TouchableOpacity
+                          style={styles.editButton}
+                          onPress={() => {
+                            router.push({ pathname: '/modal', params: { id: task.id, title: task.title } });
+                          }}
+                        >
+                          <Ionicons name="create-outline" size={24} color={theme.colors.text} />
+                        </TouchableOpacity>
                       </View>
                     ) : (
                       <View style={styles.emptySlotContent}>
@@ -246,11 +254,11 @@ const HomeScreen: React.FC = () => {
             <ActivityGraph data={activityData} onDayPress={handleDayPress} onDayLongPress={handleDayLongPress} />
         </ScrollView>
 
-        {editingSlot !== null && (
+        {addingToSlot !== null && (
           <View style={[styles.inputContainer, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
             <TextInput
               style={[styles.input, { color: theme.colors.text }]}
-              placeholder={`What is priority #${editingSlot + 1}?`}
+              placeholder={`What is priority #${addingToSlot + 1}?`}
               placeholderTextColor="#9CA3AF"
               value={taskTitle}
               onChangeText={setTaskTitle}
@@ -372,11 +380,15 @@ const styles = StyleSheet.create({
   emptySlotContent: { alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
   emptySlotText: { marginLeft: 12, fontSize: 16, fontWeight: '500' },
   taskContent: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  taskTitle: { fontSize: 18, fontWeight: '600', flex: 1, marginLeft: 16 },
+  taskTitle: { fontSize: 18, fontWeight: '600', flex: 1, marginLeft: 16, marginRight: 30 },
   completedTask: { textDecorationLine: 'line-through', opacity: 0.7 },
   checkbox: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
+  editButton: { position: 'absolute', right: 0, top: 0, bottom: 0, justifyContent: 'center', paddingHorizontal: 5 },
   inputContainer: { flexDirection: 'row', alignItems: 'center', padding: 16, borderTopWidth: 1 },
   input: { flex: 1, fontSize: 18, paddingVertical: 10 },
+  modalInput: { marginBottom: 20, padding: 16, borderRadius: 10, borderWidth: 1 },
+  saveButton: { padding: 16, borderRadius: 10, alignItems: 'center' },
+  saveButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
   addButton: { marginLeft: 12 },
   streakContainer: { flexDirection: 'row', alignItems: 'center', marginRight: 10 },
   streakCount: { fontSize: 16, fontWeight: '600', marginLeft: 4 },
